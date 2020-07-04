@@ -275,23 +275,6 @@ history = model.fit(train_images, train_labels, epochs=30)
 model.evaluate(test_images, test_labels)
 
 
-#Try classify test image:
-"""
-classifications = model.predict(test_images)
-index1 = 3  #Index to the layers
-print("Classify 1 test sample")
-print(classifications[index1]) # This prints the values of output nodes for test sample pointed by index1 
-print(test_labels[index1])     # This is the result after evaluating all the 4 output nodes.
-"""
-# Save the model.
-# Save the complete model (including the architecture, the weights, the configuration and 
-# the optimizer) in H5 format.  If the extension is not provided, it will be saved in
-# tensorflow checkpoint format.
-#model.save('MyCNNModel.h5')
-# Note, we can also save the configuration or the weights only.  See the methods
-# get_weights() and get_configs(), to_json(), save_weights() in the tensorflow API
-# documentation.
-
 """
 #--- Create a CNN for prediction, and analyze 1 test image ---
 """
