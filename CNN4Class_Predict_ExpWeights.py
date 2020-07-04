@@ -12,7 +12,7 @@ determine if there is any object on the floor.  The main assumption:
 Due to speed and memory limitation of the CPU (the inference model 
 is to be run on a 32-bits micro-controller), we further reduce the 
 size of the image to be analyzed.  Here only a region-of-interest (ROI)
-size of 50x80 pixels in the lower half of the image is analyzed.
+size of 37x100 pixels in the lower half of the image is analyzed.
 
 The file:
     1. Loads a bitmap (BMP) images for training and test samples and generates
@@ -42,36 +42,16 @@ _imgheight = 120
 
 #Set the region of interest start point and size.
 #Note: The coordinate (0,0) starts at top left hand corner of the image frame.
-"""
-_roi_startx = 42
-_roi_starty = 67
-_roi_width = 76
-_roi_height = 47
-_layer0_channel = 16
-"""
-"""
-_roi_startx = 40
-_roi_starty = 67
-_roi_width = 80
-_roi_height = 47
-_layer0_channel = 17
-"""
-"""
-_roi_startx = 40
-_roi_starty = 67
-_roi_width = 80
-_roi_height = 49
-_layer0_channel = 16
-"""
 _roi_startx = 30
 _roi_starty = 71
 _roi_width = 100
 _roi_height = 37
-_layer0_channel = 16
 
-_DNN1_node = 35
-_DNN2_node = 4
-_DNN3_node = 4
+#CNN model parameters
+_layer0_channel = 16   #No. of channels in 1st layer, e.g. no. of 2D convolution filter.
+_DNN1_node = 35 #No. of nodes in 2nd layer.
+_DNN2_node = 4  #No. of nodes in 3rd layer (Output).
+
 
 train_dir = os.path.join('./TrainImage/NoObject') #Create a path to folder the no object in training image directory
 train_names = os.listdir(train_dir)   #Create a list containing the filenames of all image files in the directory.
@@ -273,17 +253,7 @@ test_images = test_images/256.0 #Normalize the test image array.
 test_images=test_images.reshape(test_num_files + test_num_files2 + test_num_files3 +
                                 test_num_files4, _roi_height, _roi_width, 1)
 
-"""
-# Model - CNN with single convolution layer and single max-pooling layer, 3 DNN layers.
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Conv2D(_layer0_channel, (3,3), strides = 2, activation='relu', input_shape=(_roi_height, _roi_width, 1)),
-    tf.keras.layers.MaxPooling2D(2, 2),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(_DNN1_node, activation='relu'),
-    tf.keras.layers.Dense(_DNN2_node, activation='relu'),
-    tf.keras.layers.Dense(_DNN3_node, activation='softmax')
-    ])
-"""
+
 # Model - CNN with single convolution layer and single max-pooling layer, 2 DNN layers.
 model = tf.keras.models.Sequential([
     tf.keras.layers.Conv2D(_layer0_channel, (3,3), strides = 2, activation='relu', input_shape=(_roi_height, _roi_width, 1)),
@@ -418,14 +388,12 @@ f.write("\n\n")
 # Conv2D1
 N = 3   # Filter size, 3x3
 
-#f.write("const  float  gfL1f[%d][%d][%d] = { \n" % (Conv2D1filter,N,N))  # Floating point version
 f.write("const  int  gnL1f[%d][%d][%d] = { \n" % (Conv2D1filter,N,N))  # Integer version
 for nfilter in range(Conv2D1filter):
     f.write("{")
     for i in range(3):
         f.write("{")
         for j in range(3):
-            #f.write("%f" % wtConv2D1[i,j,0,nfilter])   # Floating point version.
             f.write("%d" % (wtConv2D1[i,j,0,nfilter]*1000000))  # Scaled integer version.
             if j < (N-1):
                 f.write(", ")       # Add a comma and space after every number, except last number.
@@ -439,10 +407,8 @@ for nfilter in range(Conv2D1filter):
 f.write("}; \n\n")
 
 # Bias for Conv2D1
-#f.write("const  float  gfL1fbias[%d] = {" % Conv2D1filter)  # Floating point version
 f.write("const  int  gnL1fbias[%d] = {" % Conv2D1filter)  # Integer version
 for nfilter in range(Conv2D1filter):
-    #f.write("%f" % wtConv2D1bias[nfilter])  # Floating point version
     f.write("%d" % (wtConv2D1bias[nfilter]*1000000))  # Scaled integer version
     if nfilter < (Conv2D1filter-1):
         f.write(", ")
@@ -450,12 +416,10 @@ f.write("}; \n\n")
 
 # DNN layer 1
 # Weights
-#f.write("const  float  gfDNN1w[%d][%d] = { \n" % (Flattennode,DNN1node))   # Floating point version
 f.write("const  int  gnDNN1w[%d][%d] = { \n" % (Flattennode,DNN1node))      # Integer version.
 for i in range(Flattennode):
     f.write("{")
     for j in range(DNN1node):
-        #f.write("%f" % wtDNN1[i,j])  # Floating point version.
         f.write("%d" % (wtDNN1[i,j]*1000000)) # Scaled integer version.
         if j < (DNN1node - 1):
             f.write(", ")           # Add a comma and space after every number, except last number.
@@ -466,10 +430,8 @@ for i in range(Flattennode):
 f.write("}; \n\n")
 
 # Bias
-#f.write("const float gfDNN1bias[%d] = {" % DNN1node)  # Floating point version.
 f.write("const int gnDNN1bias[%d] = {" % DNN1node)  # Scaled integer veresion.
 for i in range(DNN1node):
-    #f.write("%f" % wtDNN1bias[i])  # Floating point version.
     f.write("%d" % (wtDNN1bias[i]*1000000))  #Scaled to integer.
     if i < (DNN1node - 1):
         f.write(", ")
@@ -477,12 +439,10 @@ f.write("}; \n\n")
 
 # DNN layer 2
 # Weights
-#f.write("const  float  gfDNN2w[%d][%d] = { \n" % (DNN1node,DNN2node))  # Floating point version.
 f.write("const  int  gnDNN2w[%d][%d] = { \n" % (DNN1node,DNN2node))  # Scaled integer veresion.
 for i in range(DNN1node):
     f.write("{")
     for j in range(DNN2node):
-        #f.write("%f" % wtDNN2[i,j])  # Floating point version.
         f.write("%d" % (wtDNN2[i,j]*1000000))  # Scaled integer veresion.
         if j < (DNN2node - 1):
             f.write(", ")           # Add a comma and space after every number, except last number.
@@ -493,10 +453,8 @@ for i in range(DNN1node):
 f.write("}; \n\n")
 
 # Bias
-#f.write("const float gfDNN2bias[%d] = {" % DNN2node)
 f.write("const int gnDNN2bias[%d] = {" % DNN2node)
 for i in range(DNN2node):
-    #f.write("%f" % wtDNN2bias[i])  # Floating point version.
     f.write("%d" % (wtDNN2bias[i]*1000000))  # Scaled to integer veresion.
     if i < (DNN2node - 1):
         f.write(", ")
